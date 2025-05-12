@@ -4,5 +4,3 @@
         (* x (fac (- x 1)))))
 
 (println (fac 5))
-
-(println "🤔")
