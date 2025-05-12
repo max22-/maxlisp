@@ -17,7 +17,7 @@ fn main() {
         }
     };
 
-    let mut lexer = lexer::Lexer::new(&source);
+    let lexer = lexer::Lexer::new(&source);
 
     for tok in lexer.into_iter() {
         match tok {
