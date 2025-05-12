@@ -1,3 +1,4 @@
+
 #[derive(Debug)]
 pub enum TokenType {
     LPAREN,
@@ -10,9 +11,9 @@ pub enum TokenType {
 }
 
 #[derive(Debug)]
-pub struct Token<'a> {
+pub struct Token {
     pub r#type: TokenType,
-    pub val: &'a [u8],
+    pub val: String,
     pub pos: usize,
 }
 pub struct Lexer<'a> {
@@ -62,15 +63,15 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn make_token(self: &Self, r#type: TokenType) -> Token<'a> {
+    fn make_token(self: &Self, r#type: TokenType) -> Token {
         Token {
             r#type: r#type,
-            val: &self.source.as_bytes()[self.start..self.pos],
+            val: String::from(&self.source[self.start..self.pos]),
             pos: self.start,
         }
     }
 
-    fn integer(self: &mut Self) -> Result<Token<'a>, LexerError> {
+    fn integer(self: &mut Self) -> Result<Token, LexerError> {
         loop {
             let r = self.peek();
             match r {
@@ -88,7 +89,7 @@ impl<'a> Lexer<'a> {
         Ok(self.make_token(TokenType::INTEGER))
     }
 
-    fn string(self: &mut Self) -> Result<Token<'a>, LexerError> {
+    fn string(self: &mut Self) -> Result<Token, LexerError> {
         self.advance(); // skip the '"'
         loop {
             let r = self.peek();
@@ -111,7 +112,7 @@ impl<'a> Lexer<'a> {
         Ok(self.make_token(TokenType::STRING))
     }
 
-    fn symbol(self: &mut Self) -> Result<Token<'a>, LexerError> {
+    fn symbol(self: &mut Self) -> Result<Token, LexerError> {
         loop {
             let r = self.peek();
             match r {
@@ -130,7 +131,7 @@ impl<'a> Lexer<'a> {
         Ok(self.make_token(TokenType::SYMBOL))
     }
 
-    pub fn next_token(self: &mut Self) -> Result<Token<'a>, LexerError> {
+    pub fn next_token(self: &mut Self) -> Result<Token, LexerError> {
         self.skip_space();
         self.start = self.pos;
         let c = self.peek()?;
@@ -167,7 +168,7 @@ pub struct LexerError {
 }
 
 impl <'a> Iterator for Lexer<'a> {
-    type Item = Result<Token<'a>, LexerError>;
+    type Item = Result<Token, LexerError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.next_token() {

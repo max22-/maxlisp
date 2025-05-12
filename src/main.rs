@@ -21,7 +21,7 @@ fn main() {
 
     for tok in lexer.into_iter() {
         match tok {
-            Ok(t) => println!("{:?}", String::from_utf8(t.val.to_vec())),
+            Ok(t) => println!("{:?}", t),
             Err(e) => println!("{:?}", e)
         }
     }
