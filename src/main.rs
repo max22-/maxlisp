@@ -1,5 +1,7 @@
 use std::env;
 use std::fs;
+
+use lexer::LexerErrorType;
 mod lexer;
 
 fn main() {
@@ -17,13 +19,20 @@ fn main() {
         }
     };
 
-    let lexer = lexer::Lexer::new(&source);
+    let mut lexer = lexer::Lexer::new(&source);
 
-    for tok in lexer.into_iter() {
-        match tok {
+    loop {
+        match lexer.next_token() {
             Ok(t) => println!("{:?}", t),
-            Err(e) => println!("{:?}", e)
+            Err(e) => match e.r#type {
+                LexerErrorType::Eof => break,
+                _ => {
+                    println!("{:?}", e);
+                    break;
+                }
+            }
         }
+
     }
     
 }

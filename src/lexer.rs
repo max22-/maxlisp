@@ -163,21 +163,7 @@ pub enum LexerErrorType {
 
 #[derive(Debug)]
 pub struct LexerError {
-    r#type: LexerErrorType,
-    pos: usize,
-}
-
-impl <'a> Iterator for Lexer<'a> {
-    type Item = Result<Token, LexerError>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.next_token() {
-            Ok(x) => Some(Ok(x)),
-            Err(e) => match e.r#type {
-                LexerErrorType::Eof => None,
-                _ => Some(Err(e))
-            }
-        }
-    }
+    pub r#type: LexerErrorType,
+    pub pos: usize,
 }
 
