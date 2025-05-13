@@ -1,6 +1,4 @@
-use std::num::ParseIntError;
-
-use crate::interner::{self, Interner};
+use crate::interner::Interner;
 use crate::lexer::{Lexer, Token, TokenType};
 use crate::sexp::Sexp;
 
@@ -22,16 +20,14 @@ pub struct ParseError {
 pub struct Parser<'a> {
     source: &'a String,
     lexer: Lexer<'a>,
-    interner: &'a mut Interner,
     look: Option<Token>,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(source: &'a String, interner: &'a mut Interner) -> Self {
+    pub fn new(source: &'a String) -> Self {
         return Self {
             source: source,
             lexer: Lexer::new(source),
-            interner: interner,
             look: None,
         };
     }
@@ -49,14 +45,14 @@ impl<'a> Parser<'a> {
         });
     }
 
-    fn parse_cdr(self: &mut Self) -> Result<Sexp, ParseError> {
+    fn parse_cdr(self: &mut Self, interner: &mut Interner) -> Result<Sexp, ParseError> {
         match &self.look {
             None => self.make_error(ParseErrorType::UnexpectedEOF),
             Some(t) => match t.r#type {
                 TokenType::RPAREN => Ok(Sexp::Nil),
                 TokenType::DOT => {
                     self.advance()?;
-                    let form = self.next_form()?;
+                    let form = self.next_form(interner)?;
                     if let Some(cdr) = form {
                         if let Some(t) = &self.look {
                             if t.r#type != TokenType::RPAREN {
@@ -72,9 +68,9 @@ impl<'a> Parser<'a> {
                     }
                 },
                 _ => {
-                    let form = self.next_form()?;
+                    let form = self.next_form(interner)?;
                     if let Some(car) = form {
-                        Ok(Sexp::Pair(Box::new(car), Box::new(self.parse_cdr()?)))
+                        Ok(Sexp::Pair(Box::new(car), Box::new(self.parse_cdr(interner)?)))
                     } else {
                         self.make_error(ParseErrorType::UnexpectedEOF)
                     }
@@ -83,19 +79,19 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_list(self: &mut Self) -> Result<Sexp, ParseError> {
+    fn parse_list(self: &mut Self, interner: &mut Interner) -> Result<Sexp, ParseError> {
         self.advance()?; // skip the '('
-        let first = if let Some(s) = self.next_form()? {
+        let first = if let Some(s) = self.next_form(interner)? {
             s
         } else {
             self.make_error(ParseErrorType::UnexpectedEOF)?
         };
-        let result = Sexp::Pair(Box::new(first), Box::new(self.parse_cdr()?));
+        let result = Sexp::Pair(Box::new(first), Box::new(self.parse_cdr(interner)?));
         self.advance()?; // skip the ')'
         Ok(result)
     }
 
-    pub fn next_form(self: &mut Self) -> Result<Option<Sexp>, ParseError> {
+    pub fn next_form(self: &mut Self, interner: &mut Interner) -> Result<Option<Sexp>, ParseError> {
         if self.look == None {
             self.advance()?;
         }
@@ -105,7 +101,7 @@ impl<'a> Parser<'a> {
                 TokenType::INTEGER => {
                     let i = match t.val.parse::<i64>() {
                         Ok(i) => i,
-                        Err(e) => {
+                        Err(_) => {
                             return Err(ParseError {
                                 r#type: ParseErrorType::FailedToParseInteger,
                                 pos: t.pos,
@@ -116,7 +112,7 @@ impl<'a> Parser<'a> {
                     Ok(Some(Sexp::Integer(i)))
                 }
                 TokenType::SYMBOL => {
-                    let result = Sexp::Symbol(self.interner.intern(t.val.clone()));
+                    let result = Sexp::Symbol(interner.intern(t.val.clone()));
                     self.advance()?;
                     Ok(Some(result))
                 },
@@ -126,7 +122,7 @@ impl<'a> Parser<'a> {
                     Ok(Some(result))
                 },
                 TokenType::LPAREN => {
-                    Ok(Some(self.parse_list()?))
+                    Ok(Some(self.parse_list(interner)?))
                 },
                 TokenType::RPAREN => Err(ParseError {
                     r#type: ParseErrorType::UnexpectedRPAREN,

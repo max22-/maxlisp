@@ -24,12 +24,12 @@ fn main() {
     };
 
     let mut interner = Interner::new();
-    let mut parser = Parser::new(&source, &mut interner);
+    let mut parser = Parser::new(&source);
 
     loop {
-        match parser.next_form() {
+        match parser.next_form(&mut interner) {
             Ok(o) => match o {
-                Some(s) => println!("{}", s),
+                Some(s) => println!("{}", s.to_string(&interner)),
                 None => break,
             },
             Err(e) => {
