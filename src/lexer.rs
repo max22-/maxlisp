@@ -80,7 +80,6 @@ impl<'a> Lexer<'a> {
     fn string(self: &mut Self) -> Result<Option<Token>, LexerError> {
         self.advance(); // skip the '"'
         loop {
-            let r = self.peek();
             match self.peek() {
                 Some(b'"') => break,
                 Some(_) => {}
