@@ -1,7 +1,6 @@
 use std::env;
 use std::fs;
 
-use lexer::LexerErrorType;
 mod lexer;
 
 fn main() {
@@ -23,16 +22,15 @@ fn main() {
 
     loop {
         match lexer.next_token() {
-            Ok(t) => println!("{:?}", t),
-            Err(e) => match e.r#type {
-                LexerErrorType::Eof => break,
-                _ => {
+            Ok(o) => match o {
+                Some(t) => println!("{:?}", t),
+                None => break
+            }
+            Err(e) => {
                     println!("{:?}", e);
                     break;
-                }
             }
         }
 
-    }
-    
+    } 
 }

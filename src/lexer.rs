@@ -35,14 +35,11 @@ impl<'a> Lexer<'a> {
         self.pos >= self.source.len()
     }
 
-    fn peek(self: &Self) -> Result<u8, LexerError> {
+    fn peek(self: &Self) -> Option<u8> {
         if self.is_eof() {
-            Err(LexerError {
-                r#type: LexerErrorType::Eof,
-                pos: self.pos,
-            })
+            None
         } else {
-            return Ok(self.source.as_bytes()[self.pos]);
+            Some(self.source.as_bytes()[self.pos])
         }
     }
 
@@ -54,10 +51,9 @@ impl<'a> Lexer<'a> {
 
     fn skip_space(self: &mut Self) {
         loop {
-            let r = self.peek();
-            match r {
-                Ok(c) => if !c.is_ascii_whitespace() { break },
-                Err(e) => break,
+            match self.peek() {
+                Some(c) => if !c.is_ascii_whitespace() { break },
+                None=> break,
             }
             self.advance();
         }
@@ -71,85 +67,69 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn integer(self: &mut Self) -> Result<Token, LexerError> {
+    fn integer(self: &mut Self) -> Result<Option<Token>, LexerError> {
         loop {
-            let r = self.peek();
-            match r {
-                Ok(c) => if !c.is_ascii_digit() { break },
-                Err(e) => {
-                    if e.r#type == LexerErrorType::Eof {
-                        break;
-                    } else {
-                        return Err(e);
-                    }
-                }
+            match self.peek() {
+                Some(c) => if !c.is_ascii_digit() { break },
+                None => break
             };
             self.advance();
         }
-        Ok(self.make_token(TokenType::INTEGER))
+        Ok(Some(self.make_token(TokenType::INTEGER)))
     }
 
-    fn string(self: &mut Self) -> Result<Token, LexerError> {
+    fn string(self: &mut Self) -> Result<Option<Token>, LexerError> {
         self.advance(); // skip the '"'
         loop {
             let r = self.peek();
-            match r {
-                Ok(b'"') => break,
-                Ok(_) => {}
-                Err(e) => match e.r#type {
-                    LexerErrorType::Eof => {
-                        return Err(LexerError {
+            match self.peek() {
+                Some(b'"') => break,
+                Some(_) => {}
+                None =>  return Err(LexerError {
                             r#type: LexerErrorType::StringNotTerminated,
                             pos: self.start,
-                        });
-                    }
-                    LexerErrorType::StringNotTerminated => unreachable!(),
-                },
+                        }),
             }
             self.advance();
         }
         self.advance(); // skip the '"'
-        Ok(self.make_token(TokenType::STRING))
+        Ok(Some(self.make_token(TokenType::STRING)))
     }
 
-    fn symbol(self: &mut Self) -> Result<Token, LexerError> {
+    fn symbol(self: &mut Self) -> Result<Option<Token>, LexerError> {
         loop {
-            let r = self.peek();
-            match r {
-                Ok(c) => {
+            match self.peek() {
+                Some(c) => {
                     if c == b'(' || c == b')' || c.is_ascii_whitespace() {
                         break;
                     }
                 }
-                Err(e) => match e.r#type {
-                    LexerErrorType::Eof => break,
-                    LexerErrorType::StringNotTerminated => unreachable!(),
-                },
+                None => break
             }
             self.advance();
         }
-        Ok(self.make_token(TokenType::SYMBOL))
+        Ok(Some(self.make_token(TokenType::SYMBOL)))
     }
 
-    pub fn next_token(self: &mut Self) -> Result<Token, LexerError> {
+    pub fn next_token(self: &mut Self) -> Result<Option<Token>, LexerError> {
         self.skip_space();
         self.start = self.pos;
-        let c = self.peek()?;
-        match c {
-            b'(' => {
+        match self.peek() {
+            None => Ok(None),
+            Some(b'(') => {
                 self.advance();
-                Ok(self.make_token(TokenType::LPAREN))
+                Ok(Some(self.make_token(TokenType::LPAREN)))
             }
-            b')' => {
+            Some(b')') => {
                 self.advance();
-                Ok(self.make_token(TokenType::RPAREN))
+                Ok(Some(self.make_token(TokenType::RPAREN)))
             }
-            b'.' => {
+            Some(b'.') => {
                 self.advance();
-                Ok(self.make_token(TokenType::DOT))
+                Ok(Some(self.make_token(TokenType::DOT)))
             }
-            b'0'..=b'9' => self.integer(),
-            b'"' => self.string(),
+            Some(b'0'..=b'9') => self.integer(),
+            Some(b'"') => self.string(),
             _ => self.symbol(),
         }
     }
@@ -157,7 +137,6 @@ impl<'a> Lexer<'a> {
 
 #[derive(PartialEq, Debug)]
 pub enum LexerErrorType {
-    Eof,
     StringNotTerminated,
 }
 
