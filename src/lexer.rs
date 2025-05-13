@@ -1,4 +1,6 @@
-#[derive(Debug)]
+use crate::parser::{ParseError, ParseErrorType};
+
+#[derive(Debug, PartialEq)]
 pub enum TokenType {
     LPAREN,
     RPAREN,
@@ -9,7 +11,7 @@ pub enum TokenType {
     SYMBOL,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Token {
     pub r#type: TokenType,
     pub val: String,
@@ -51,8 +53,12 @@ impl<'a> Lexer<'a> {
     fn skip_space(self: &mut Self) {
         loop {
             match self.peek() {
-                Some(c) => if !c.is_ascii_whitespace() { break },
-                None=> break,
+                Some(c) => {
+                    if !c.is_ascii_whitespace() {
+                        break;
+                    }
+                }
+                None => break,
             }
             self.advance();
         }
@@ -66,27 +72,33 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn integer(self: &mut Self) -> Result<Option<Token>, LexerError> {
+    fn integer(self: &mut Self) -> Result<Option<Token>, ParseError> {
         loop {
             match self.peek() {
-                Some(c) => if !c.is_ascii_digit() { break },
-                None => break
+                Some(c) => {
+                    if !c.is_ascii_digit() {
+                        break;
+                    }
+                }
+                None => break,
             };
             self.advance();
         }
         Ok(Some(self.make_token(TokenType::INTEGER)))
     }
 
-    fn string(self: &mut Self) -> Result<Option<Token>, LexerError> {
+    fn string(self: &mut Self) -> Result<Option<Token>, ParseError> {
         self.advance(); // skip the '"'
         loop {
             match self.peek() {
                 Some(b'"') => break,
                 Some(_) => {}
-                None =>  return Err(LexerError {
-                            r#type: LexerErrorType::StringNotTerminated,
-                            pos: self.start,
-                        }),
+                None => {
+                    return Err(ParseError {
+                        r#type: ParseErrorType::StringNotTerminated,
+                        pos: self.start,
+                    });
+                }
             }
             self.advance();
         }
@@ -94,7 +106,7 @@ impl<'a> Lexer<'a> {
         Ok(Some(self.make_token(TokenType::STRING)))
     }
 
-    fn symbol(self: &mut Self) -> Result<Option<Token>, LexerError> {
+    fn symbol(self: &mut Self) -> Result<Option<Token>, ParseError> {
         loop {
             match self.peek() {
                 Some(c) => {
@@ -102,14 +114,14 @@ impl<'a> Lexer<'a> {
                         break;
                     }
                 }
-                None => break
+                None => break,
             }
             self.advance();
         }
         Ok(Some(self.make_token(TokenType::SYMBOL)))
     }
 
-    pub fn next_token(self: &mut Self) -> Result<Option<Token>, LexerError> {
+    pub fn next_token(self: &mut Self) -> Result<Option<Token>, ParseError> {
         self.skip_space();
         self.start = self.pos;
         match self.peek() {
@@ -132,15 +144,3 @@ impl<'a> Lexer<'a> {
         }
     }
 }
-
-#[derive(PartialEq, Debug)]
-pub enum LexerErrorType {
-    StringNotTerminated,
-}
-
-#[derive(Debug)]
-pub struct LexerError {
-    pub r#type: LexerErrorType,
-    pub pos: usize,
-}
-

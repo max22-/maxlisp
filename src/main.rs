@@ -2,6 +2,11 @@ use std::env;
 use std::fs;
 
 mod lexer;
+mod parser;
+use parser::Parser;
+mod interner;
+mod sexp;
+use interner::Interner;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -18,19 +23,19 @@ fn main() {
         }
     };
 
-    let mut lexer = lexer::Lexer::new(&source);
+    let mut interner = Interner::new();
+    let mut parser = Parser::new(&source, &mut interner);
 
     loop {
-        match lexer.next_token() {
+        match parser.next_form() {
             Ok(o) => match o {
-                Some(t) => println!("{:?}", t),
-                None => break
-            }
+                Some(s) => println!("{}", s),
+                None => break,
+            },
             Err(e) => {
-                    println!("{:?}", e);
-                    break;
+                println!("{:?}", e);
+                break;
             }
         }
-
-    } 
+    }
 }

@@ -1,12 +1,11 @@
 use core::fmt;
 
-
 pub enum Sexp {
     Integer(i64),
     Symbol(u64),
     String(String),
     Pair(Box<Sexp>, Box<Sexp>),
-    Nil
+    Nil,
 }
 
 impl fmt::Display for Sexp {
@@ -24,18 +23,17 @@ impl fmt::Display for Sexp {
                         Sexp::Pair(car, cdr) => {
                             write!(f, " {}", car)?;
                             it = &cdr;
-                        },
+                        }
                         Sexp::Nil => break,
                         s => {
                             write!(f, " . {}", s)?;
                             break;
                         }
-
                     }
                 }
                 write!(f, ")")
-            },
-            Sexp::Nil => write!(f, "()")
+            }
+            Sexp::Nil => write!(f, "()"),
         }
     }
 }
