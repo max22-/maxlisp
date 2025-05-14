@@ -33,7 +33,7 @@ fn main() {
                 None => break,
             },
             Err(e) => {
-                println!("{:?}", e);
+                println!("{}", e.to_string(file_path, &source));
                 break;
             }
         }

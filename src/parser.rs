@@ -11,10 +11,41 @@ pub enum ParseErrorType {
     MalformedList,
 }
 
+impl std::fmt::Display for ParseErrorType {
+    fn fmt(self: &Self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::StringNotTerminated => write!(fmt, "string not terminated"),
+            Self::FailedToParseInteger => write!(fmt, "failed to parse integer"),
+            Self::UnexpectedRPAREN => write!(fmt, "unexpected `)`"),
+            Self::UnexpectedEOF => write!(fmt, "unexpected end of file"),
+            Self::MalformedList => write!(fmt, "malformed list")
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct ParseError {
     pub r#type: ParseErrorType,
     pub pos: usize,
+}
+
+impl ParseError {
+    pub fn to_string(self: &Self, file_path: &String, source: &String) -> String {
+        let mut line: usize = 1;
+        let mut column: usize = 1;
+        for i in 0..self.pos {
+            if i >= source.len() {
+                unreachable!()
+            }
+            if source.as_bytes()[i] == b'\n' {
+                line += 1;
+                column = 1;
+            } else {
+                column += 1;
+            }
+        }
+        format!("{}:{}:{}: {}", file_path, line, column, self.r#type)
+    }
 }
 
 pub struct Parser<'a> {
