@@ -11,8 +11,8 @@ pub struct Cell {
 }
 
 impl Cell {
-    fn new() -> Self {
-        return Self { val:None, mark: false }
+    fn new(sexp: Sexp) -> Self {
+        return Self { val: Some(sexp), mark: false }
     }
 }
 
@@ -35,7 +35,7 @@ impl GcHeap {
             },
             None => {
                 let handle = self.cells.len();
-                self.cells.push(Cell{val: Some(sexp), mark: false});
+                self.cells.push(Cell::new(sexp));
                 handle
             }
         }
