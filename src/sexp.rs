@@ -1,19 +1,29 @@
-use core::fmt;
-use crate::interner::Interner;
 use crate::gc_heap::{GcHeap, Handle};
+use crate::interner::Interner;
+use crate::evaluator::Evaluator;
+
+
+pub type Symbol = u64;
+
 pub enum Sexp {
     Integer(i64),
-    Symbol(u64),
+    Symbol(Symbol),
     String(String),
     Pair(Handle, Handle),
     Nil,
+    Builtin(fn(&mut Evaluator)),
 }
 
 impl Sexp {
     pub fn to_string(&self, heap: &GcHeap, interner: &Interner) -> String {
         match self {
             Sexp::Integer(i) => format!("{}", i),
-            Sexp::Symbol(s) => format!("{}", interner.string_from_symbol(*s).unwrap_or(&String::from("<unknown symbol>"))),
+            Sexp::Symbol(s) => format!(
+                "{}",
+                interner
+                    .string_from_symbol(*s)
+                    .unwrap_or(&String::from("<unknown symbol>"))
+            ),
             Sexp::String(s) => format!("{:?}", s),
             Sexp::Pair(car_handle, cdr_handle) => {
                 let car = heap.get_ref(*car_handle);
@@ -43,6 +53,7 @@ impl Sexp {
                 result
             }
             Sexp::Nil => String::from("()"),
+            Self::Builtin(_) => String::from("<builtin>")
         }
     }
 }

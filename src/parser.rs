@@ -19,7 +19,7 @@ impl std::fmt::Display for ParseErrorType {
             Self::FailedToParseInteger => write!(fmt, "failed to parse integer"),
             Self::UnexpectedRPAREN => write!(fmt, "unexpected `)`"),
             Self::UnexpectedEOF => write!(fmt, "unexpected end of file"),
-            Self::MalformedList => write!(fmt, "malformed list")
+            Self::MalformedList => write!(fmt, "malformed list"),
         }
     }
 }
@@ -75,7 +75,11 @@ impl<'a> Parser<'a> {
         });
     }
 
-    fn parse_cdr(self: &mut Self, heap: &mut GcHeap, interner: &mut Interner) -> Result<Handle, ParseError> {
+    fn parse_cdr(
+        self: &mut Self,
+        heap: &mut GcHeap,
+        interner: &mut Interner,
+    ) -> Result<Handle, ParseError> {
         match &self.look {
             None => self.make_error(ParseErrorType::UnexpectedEOF),
             Some(t) => match t.r#type {
@@ -88,7 +92,7 @@ impl<'a> Parser<'a> {
                             if t.r#type != TokenType::RPAREN {
                                 self.make_error(ParseErrorType::MalformedList)
                             } else {
-                                Ok(cdr)                     
+                                Ok(cdr)
                             }
                         } else {
                             self.make_error(ParseErrorType::UnexpectedEOF)
@@ -96,7 +100,7 @@ impl<'a> Parser<'a> {
                     } else {
                         self.make_error(ParseErrorType::UnexpectedEOF)
                     }
-                },
+                }
                 _ => {
                     let form = self.next_form(heap, interner)?;
                     if let Some(car) = form {
@@ -106,11 +110,15 @@ impl<'a> Parser<'a> {
                         self.make_error(ParseErrorType::UnexpectedEOF)
                     }
                 }
-            }
+            },
         }
     }
 
-    fn parse_list(self: &mut Self, heap: &mut GcHeap, interner: &mut Interner) -> Result<Handle, ParseError> {
+    fn parse_list(
+        self: &mut Self,
+        heap: &mut GcHeap,
+        interner: &mut Interner,
+    ) -> Result<Handle, ParseError> {
         self.advance()?; // skip the '('
         let first = if let Some(s) = self.next_form(heap, interner)? {
             s
@@ -123,7 +131,11 @@ impl<'a> Parser<'a> {
         Ok(result)
     }
 
-    pub fn next_form(self: &mut Self, heap: &mut GcHeap, interner: &mut Interner) -> Result<Option<Handle>, ParseError> {
+    pub fn next_form(
+        self: &mut Self,
+        heap: &mut GcHeap,
+        interner: &mut Interner,
+    ) -> Result<Option<Handle>, ParseError> {
         if self.look == None {
             self.advance()?;
         }
@@ -147,15 +159,13 @@ impl<'a> Parser<'a> {
                     let result = Sexp::Symbol(interner.intern(t.val.clone()));
                     self.advance()?;
                     Ok(Some(heap.alloc(result)))
-                },
+                }
                 TokenType::STRING => {
                     let result = Sexp::String(t.val.clone());
                     self.advance()?;
                     Ok(Some(heap.alloc(result)))
-                },
-                TokenType::LPAREN => {
-                    Ok(Some(self.parse_list(heap, interner)?))
-                },
+                }
+                TokenType::LPAREN => Ok(Some(self.parse_list(heap, interner)?)),
                 TokenType::RPAREN => Err(ParseError {
                     r#type: ParseErrorType::UnexpectedRPAREN,
                     pos: t.pos,

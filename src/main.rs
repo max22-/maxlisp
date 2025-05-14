@@ -3,11 +3,13 @@ use std::fs;
 
 mod lexer;
 mod parser;
+use evaluator::Evaluator;
 use gc_heap::GcHeap;
 use parser::Parser;
 mod interner;
 mod sexp;
 use interner::Interner;
+mod evaluator;
 mod gc_heap;
 
 fn main() {
@@ -28,11 +30,16 @@ fn main() {
     let mut interner = Interner::new();
     let mut parser = Parser::new(&source);
     let mut heap = GcHeap::new();
+    let mut evaluator = Evaluator::new(&mut heap, &mut interner);
 
     loop {
         match parser.next_form(&mut heap, &mut interner) {
             Ok(o) => match o {
-                Some(s) => println!("{}", heap.get_ref(s).to_string(&heap, &interner)),
+                Some(s) => {
+                    println!("{}", heap.get_ref(s).to_string(&heap, &interner));
+                    evaluator.push_back(s);
+                    evaluator.eval(&mut heap, &mut interner);
+                }
                 None => break,
             },
             Err(e) => {

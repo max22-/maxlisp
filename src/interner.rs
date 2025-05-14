@@ -1,7 +1,8 @@
+use crate::sexp::Symbol;
 use std::collections::HashMap;
 pub struct Interner {
-    strings: HashMap<String, u64>,
-    counter: u64,
+    strings: HashMap<String, Symbol>,
+    counter: Symbol,
 }
 
 impl Interner {
@@ -12,7 +13,7 @@ impl Interner {
         };
     }
 
-    pub fn intern(self: &mut Self, s: String) -> u64 {
+    pub fn intern(self: &mut Self, s: String) -> Symbol {
         if self.strings.contains_key(&s) {
             self.strings[&s]
         } else {
@@ -23,7 +24,7 @@ impl Interner {
         }
     }
 
-    pub fn string_from_symbol(self: &Self, s: u64) -> Option<&String> {
+    pub fn string_from_symbol(self: &Self, s: Symbol) -> Option<&String> {
         for (k, v) in self.strings.iter() {
             if *v == s {
                 return Some(k);
