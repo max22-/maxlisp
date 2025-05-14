@@ -1,0 +1,47 @@
+use std::vec;
+use crate::sexp::Sexp;
+
+const MAX_HEAP_SIZE: usize = 1000;
+
+pub type Handle = usize;
+
+pub struct Cell {
+    val: Option<Sexp>,
+    mark: bool
+}
+
+impl Cell {
+    fn new() -> Self {
+        return Self { val:None, mark: false }
+    }
+}
+
+pub struct GcHeap {
+    cells: Vec<Cell>,
+    free_list: Vec<Handle>,
+}
+
+impl GcHeap {
+
+    pub fn new() -> Self {
+        Self { cells: vec![], free_list: vec![] }
+    }
+
+    pub fn alloc(self: &mut Self, sexp: Sexp) -> Handle {
+        match self.free_list.pop() {
+            Some(handle) => {
+                self.cells.get_mut(handle).expect("unknown id").val = Some(sexp);
+                handle
+            },
+            None => {
+                let handle = self.cells.len();
+                self.cells.push(Cell{val: Some(sexp), mark: false});
+                handle
+            }
+        }
+    }
+
+    pub fn get_ref(self: &Self, handle: Handle) -> &Sexp {
+        self.cells.get(handle).expect("unknown id").val.as_ref().expect("empty cell")
+    }
+}

@@ -1,3 +1,4 @@
+use crate::gc_heap::{GcHeap, Handle};
 use crate::interner::Interner;
 use crate::lexer::{Lexer, Token, TokenType};
 use crate::sexp::Sexp;
@@ -49,7 +50,6 @@ impl ParseError {
 }
 
 pub struct Parser<'a> {
-    source: &'a String,
     lexer: Lexer<'a>,
     look: Option<Token>,
 }
@@ -57,7 +57,6 @@ pub struct Parser<'a> {
 impl<'a> Parser<'a> {
     pub fn new(source: &'a String) -> Self {
         return Self {
-            source: source,
             lexer: Lexer::new(source),
             look: None,
         };
@@ -69,21 +68,21 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
-    fn make_error(self: &Self, r#type: ParseErrorType) -> Result<Sexp, ParseError> {
+    fn make_error(self: &Self, r#type: ParseErrorType) -> Result<Handle, ParseError> {
         return Err(ParseError {
             r#type: r#type,
             pos: if let Some(t) = &self.look { t.pos } else { 0 },
         });
     }
 
-    fn parse_cdr(self: &mut Self, interner: &mut Interner) -> Result<Sexp, ParseError> {
+    fn parse_cdr(self: &mut Self, heap: &mut GcHeap, interner: &mut Interner) -> Result<Handle, ParseError> {
         match &self.look {
             None => self.make_error(ParseErrorType::UnexpectedEOF),
             Some(t) => match t.r#type {
-                TokenType::RPAREN => Ok(Sexp::Nil),
+                TokenType::RPAREN => Ok(heap.alloc(Sexp::Nil)),
                 TokenType::DOT => {
                     self.advance()?;
-                    let form = self.next_form(interner)?;
+                    let form = self.next_form(heap, interner)?;
                     if let Some(cdr) = form {
                         if let Some(t) = &self.look {
                             if t.r#type != TokenType::RPAREN {
@@ -99,9 +98,10 @@ impl<'a> Parser<'a> {
                     }
                 },
                 _ => {
-                    let form = self.next_form(interner)?;
+                    let form = self.next_form(heap, interner)?;
                     if let Some(car) = form {
-                        Ok(Sexp::Pair(Box::new(car), Box::new(self.parse_cdr(interner)?)))
+                        let cdr = self.parse_cdr(heap, interner)?;
+                        Ok(heap.alloc(Sexp::Pair(car, cdr)))
                     } else {
                         self.make_error(ParseErrorType::UnexpectedEOF)
                     }
@@ -110,19 +110,20 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_list(self: &mut Self, interner: &mut Interner) -> Result<Sexp, ParseError> {
+    fn parse_list(self: &mut Self, heap: &mut GcHeap, interner: &mut Interner) -> Result<Handle, ParseError> {
         self.advance()?; // skip the '('
-        let first = if let Some(s) = self.next_form(interner)? {
+        let first = if let Some(s) = self.next_form(heap, interner)? {
             s
         } else {
             self.make_error(ParseErrorType::UnexpectedEOF)?
         };
-        let result = Sexp::Pair(Box::new(first), Box::new(self.parse_cdr(interner)?));
+        let cdr = self.parse_cdr(heap, interner)?;
+        let result = heap.alloc(Sexp::Pair(first, cdr));
         self.advance()?; // skip the ')'
         Ok(result)
     }
 
-    pub fn next_form(self: &mut Self, interner: &mut Interner) -> Result<Option<Sexp>, ParseError> {
+    pub fn next_form(self: &mut Self, heap: &mut GcHeap, interner: &mut Interner) -> Result<Option<Handle>, ParseError> {
         if self.look == None {
             self.advance()?;
         }
@@ -140,20 +141,20 @@ impl<'a> Parser<'a> {
                         }
                     };
                     self.advance()?;
-                    Ok(Some(Sexp::Integer(i)))
+                    Ok(Some(heap.alloc(Sexp::Integer(i))))
                 }
                 TokenType::SYMBOL => {
                     let result = Sexp::Symbol(interner.intern(t.val.clone()));
                     self.advance()?;
-                    Ok(Some(result))
+                    Ok(Some(heap.alloc(result)))
                 },
                 TokenType::STRING => {
                     let result = Sexp::String(t.val.clone());
                     self.advance()?;
-                    Ok(Some(result))
+                    Ok(Some(heap.alloc(result)))
                 },
                 TokenType::LPAREN => {
-                    Ok(Some(self.parse_list(interner)?))
+                    Ok(Some(self.parse_list(heap, interner)?))
                 },
                 TokenType::RPAREN => Err(ParseError {
                     r#type: ParseErrorType::UnexpectedRPAREN,

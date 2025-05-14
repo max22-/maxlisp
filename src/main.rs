@@ -3,10 +3,12 @@ use std::fs;
 
 mod lexer;
 mod parser;
+use gc_heap::GcHeap;
 use parser::Parser;
 mod interner;
 mod sexp;
 use interner::Interner;
+mod gc_heap;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -25,11 +27,12 @@ fn main() {
 
     let mut interner = Interner::new();
     let mut parser = Parser::new(&source);
+    let mut heap = GcHeap::new();
 
     loop {
-        match parser.next_form(&mut interner) {
+        match parser.next_form(&mut heap, &mut interner) {
             Ok(o) => match o {
-                Some(s) => println!("{}", s.to_string(&interner)),
+                Some(s) => println!("{}", heap.get_ref(s).to_string(&heap, &interner)),
                 None => break,
             },
             Err(e) => {
