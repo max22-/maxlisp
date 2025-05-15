@@ -54,6 +54,15 @@ impl GcHeap {
             .as_ref()
             .expect("empty cell")
     }
+
+    pub fn get_mut_ref(self: &mut Self, handle: Handle) -> &mut Sexp {
+        self.cells
+            .get_mut(handle)
+            .expect("unknown id")
+            .val
+            .as_mut()
+            .expect("empty cell")
+    }
 }
 
 pub trait Mark {

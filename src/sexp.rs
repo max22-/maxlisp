@@ -85,6 +85,21 @@ impl Sexp {
         }
     }
 
+    pub fn into_handle_list(self: &Self, ctx: & Context) -> Result<Vec<Handle>, EvalError> {
+        let mut list: Vec<Handle> = vec![];
+        match self {
+            Sexp::Pair(car_h, cdr_h) => {
+                list.push(*car_h);
+                let cdr = ctx.heap.get_ref(*cdr_h);
+                let mut rest = cdr.into_handle_list(ctx)?;
+                list.append(&mut rest);
+                Ok(list)
+            },
+            Sexp::Nil => Ok(list),
+            _ => Err(EvalError::TypeError(String::from("expected a list")))
+        }
+    }
+
     pub fn into_integer(self: &Self, ctx: &Context) -> Result<i64, EvalError> {
         match self {
             Sexp::Integer(i) => Ok(*i),

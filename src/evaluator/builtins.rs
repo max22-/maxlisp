@@ -18,9 +18,27 @@ pub fn add(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
     Ok(())
 }
 
-pub fn wrap(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
+pub fn vau(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
+    
     Ok(())
 }
+
+pub fn def(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
+    let args_h = e.pop()?;
+    let args = ctx.heap.get_ref(args_h).into_handle_list(ctx)?;
+    if args.len() != 2 {
+        return Err(EvalError::InvalidNumberOfArguments);
+    }
+    let sym = match ctx.heap.get_ref(args[0]) {
+        Sexp::Symbol(sym) => *sym,
+        _ => return Err(EvalError::TypeError(String::from("expected symbol")))
+    };
+    let val = args[1];
+    e.define(sym, val, ctx);
+    Ok(())
+}
+
+// TODO: make "def" and "def_raw" functions
 
 pub fn eval(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
     let h = e.pop()?;
@@ -77,5 +95,7 @@ pub fn global_env(ctx: &mut Context) -> Handle {
     let mut env = Env::new(None);
     env.def(ctx.interner.intern("+"), ctx.heap.alloc(Sexp::Builtin(add)));
     env.def(ctx.interner.intern("eval"), ctx.heap.alloc(Sexp::Builtin(eval)));
+    env.def(ctx.interner.intern("vau"), ctx.heap.alloc(Sexp::Builtin(vau)));
+    env.def(ctx.interner.intern("def"), ctx.heap.alloc(Sexp::Builtin(def)));
     ctx.heap.alloc(Sexp::Env(env))
 }

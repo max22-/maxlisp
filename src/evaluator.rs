@@ -13,6 +13,8 @@ pub enum EvalError {
     CantPushOperator,
     TypeError(String),
     SymbolNotBound(String),
+    CannotPopGlobalEnv,
+    InvalidNumberOfArguments,
 }
 
 pub enum EvalItem {
@@ -73,6 +75,33 @@ impl Evaluator{
         let env = ctx.heap.get_ref(self.env);
         match env {
             Sexp::Env(env) => env.lookup(sym, ctx),
+            _ => unreachable!()
+        }
+    }
+
+    pub fn push_env(&mut self, mut env: Env, ctx: &mut Context) {
+        env.outer = Some(self.env);
+        self.env = ctx.heap.alloc(Sexp::Env(env));
+    }
+
+    pub fn pop_env(&mut self, ctx: &Context) -> Result<(), EvalError> {
+        let env = ctx.heap.get_ref(self.env);
+        match env {
+            Sexp::Env(env) => match env.outer {
+                Some(env_h) => {
+                    self.env = env_h;
+                    Ok(())
+                },
+                None => Err(EvalError::CannotPopGlobalEnv)
+            },
+            _ => unreachable!()
+        }
+    }
+
+    pub fn define(&self, sym: Symbol, val: Handle, ctx: &mut Context) {
+        let env = ctx.heap.get_mut_ref(self.env);
+        match env {
+            Sexp::Env(env) => env.def(sym, val),
             _ => unreachable!()
         }
     }

@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 pub struct Env {
     bindings: HashMap<Symbol, Handle>,
-    outer: Option<Handle>
+    pub outer: Option<Handle>
 }
 
 impl Env {
