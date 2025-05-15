@@ -10,6 +10,6 @@ pub fn add(e: &mut Evaluator) {
 pub fn global_env(ctx: &mut Context) -> Env {
     let mut env = Env::new();
     env.push_empty();
-    env.def(ctx.interner.intern(String::from("+")), ctx.heap.alloc(Sexp::Builtin(add)));
+    env.def(ctx.interner.intern("+"), ctx.heap.alloc(Sexp::Builtin(add)));
     env
 }

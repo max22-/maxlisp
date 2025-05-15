@@ -46,9 +46,9 @@ impl Evaluator{
     }
 
     pub fn eval(&mut self, ctx: &mut Context) {
-        let eval_ = ctx.heap.alloc(Sexp::Symbol(ctx.interner.intern(String::from("eval"))));
-        let push_ = ctx.heap.alloc(Sexp::Symbol(ctx.interner.intern(String::from("push"))));
-        let apply_ = ctx.heap.alloc(Sexp::Symbol(ctx.interner.intern(String::from("apply"))));
+        let eval_ = ctx.heap.alloc(Sexp::Symbol(ctx.interner.intern("eval")));
+        let push_ = ctx.heap.alloc(Sexp::Symbol(ctx.interner.intern("push")));
+        let apply_ = ctx.heap.alloc(Sexp::Symbol(ctx.interner.intern("apply")));
         loop {
             let h = self.queue.pop_front();
             match h {

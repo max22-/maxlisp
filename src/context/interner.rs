@@ -13,7 +13,8 @@ impl Interner {
         };
     }
 
-    pub fn intern(self: &mut Self, s: String) -> Symbol {
+    pub fn intern(self: &mut Self, s: &str) -> Symbol {
+        let s = String::from(s);
         if self.strings.contains_key(&s) {
             self.strings[&s]
         } else {

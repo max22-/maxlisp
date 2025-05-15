@@ -153,7 +153,7 @@ impl<'a> Parser<'a> {
                     Ok(Some(ctx.heap.alloc(Sexp::Integer(i))))
                 }
                 TokenType::SYMBOL => {
-                    let result = Sexp::Symbol(ctx.interner.intern(t.val.clone()));
+                    let result = Sexp::Symbol(ctx.interner.intern(t.val.as_str()));
                     self.advance()?;
                     Ok(Some(ctx.heap.alloc(result)))
                 }
