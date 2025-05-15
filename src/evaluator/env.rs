@@ -1,4 +1,4 @@
-use crate::gc_heap::Handle;
+use crate::context::gc_heap::Handle;
 use crate::sexp::Symbol;
 use std::collections::HashMap;
 use std::vec;

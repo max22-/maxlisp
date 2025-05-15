@@ -4,13 +4,11 @@ use std::fs;
 mod lexer;
 mod parser;
 use evaluator::Evaluator;
-use gc_heap::GcHeap;
 use parser::Parser;
-mod interner;
 mod sexp;
-use interner::Interner;
 mod evaluator;
-mod gc_heap;
+mod context;
+use context::Context;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -27,18 +25,17 @@ fn main() {
         }
     };
 
-    let mut interner = Interner::new();
+    let mut ctx = Context::new();
     let mut parser = Parser::new(&source);
-    let mut heap = GcHeap::new();
-    let mut evaluator = Evaluator::new(&mut heap, &mut interner);
+    let mut evaluator = Evaluator::new(&mut ctx);
 
     loop {
-        match parser.next_form(&mut heap, &mut interner) {
+        match parser.next_form(&mut ctx) {
             Ok(o) => match o {
                 Some(s) => {
-                    println!("{}", heap.get_ref(s).to_string(&heap, &interner));
+                    println!("{}", ctx.heap.get_ref(s).to_string(&ctx));
                     evaluator.push_back(s);
-                    evaluator.eval(&mut heap, &mut interner);
+                    evaluator.eval(&mut ctx);
                 }
                 None => break,
             },

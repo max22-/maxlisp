@@ -2,7 +2,7 @@ mod env;
 use std::collections::VecDeque;
 
 use env::Env;
-use crate::{gc_heap::{GcHeap, Handle}, interner::{self, Interner}, sexp::Sexp};
+use crate::{context::{gc_heap::Handle, Context}, sexp::Sexp};
 mod builtins;
 
 pub enum EvalError {
@@ -17,9 +17,9 @@ pub struct Evaluator{
 }
 
 impl Evaluator{
-    pub fn new(heap: &mut GcHeap, interner: &mut Interner) -> Self {
+    pub fn new(ctx: &mut Context) -> Self {
         Self {
-            env: builtins::global_env(heap,  interner),
+            env: builtins::global_env(ctx),
             stack: vec![],
             queue: VecDeque::new(),
         }
@@ -45,15 +45,15 @@ impl Evaluator{
         self.queue.push_front(handle);
     }
 
-    pub fn eval(&mut self, heap: &mut GcHeap, interner: &mut Interner) {
-        let eval_ = heap.alloc(Sexp::Symbol(interner.intern(String::from("eval"))));
-        let push_ = heap.alloc(Sexp::Symbol(interner.intern(String::from("push"))));
-        let apply_ = heap.alloc(Sexp::Symbol(interner.intern(String::from("apply"))));
+    pub fn eval(&mut self, ctx: &mut Context) {
+        let eval_ = ctx.heap.alloc(Sexp::Symbol(ctx.interner.intern(String::from("eval"))));
+        let push_ = ctx.heap.alloc(Sexp::Symbol(ctx.interner.intern(String::from("push"))));
+        let apply_ = ctx.heap.alloc(Sexp::Symbol(ctx.interner.intern(String::from("apply"))));
         loop {
             let h = self.queue.pop_front();
             match h {
                 Some(h) => {
-                    let sexp = heap.get_ref(h);
+                    let sexp = ctx.heap.get_ref(h);
                     match sexp {
                         Sexp::Integer(_) => self.stack.push(h),
                         Sexp::Symbol(_) => self.stack.push(h),
@@ -74,25 +74,25 @@ impl Evaluator{
                 },
                 None => break
             }
-            println!("{}", self.to_string(heap, interner));
+            println!("{}", self.to_string(ctx));
         }
-        println!("{}", self.to_string(heap, interner));
+        println!("{}", self.to_string(ctx));
     }
 
-    pub fn to_string(&self, heap: &mut GcHeap, interner: &mut Interner) -> String {
+    pub fn to_string(&self, ctx: &Context) -> String {
         let mut result = String::from("[");
         for (i, h) in self.stack.iter().enumerate() {
             if i != 0 {
                 result.push(' ');
             }
-            result.push_str(&heap.get_ref(*h).to_string(heap, interner));
+            result.push_str(&ctx.heap.get_ref(*h).to_string(ctx));
         }
         result.push_str("] : [");
         for (i, h) in self.queue.iter().enumerate() {
             if i != 0 {
                 result.push(' ');
             }
-            result.push_str(&heap.get_ref(*h).to_string(heap, interner));
+            result.push_str(&ctx.heap.get_ref(*h).to_string(ctx));
         }
         result.push(']');
         result
