@@ -1,39 +1,35 @@
 use crate::context::gc_heap::Handle;
-use crate::sexp::Symbol;
+use crate::context::Context;
+use crate::sexp::{Sexp, Symbol};
 use std::collections::HashMap;
-use std::vec;
 
 pub struct Env {
-    bindings: Vec<HashMap<Symbol, Handle>>,
+    bindings: HashMap<Symbol, Handle>,
+    outer: Option<Handle>
 }
 
 impl Env {
-    pub fn new() -> Self {
-        Self { bindings: vec![] }
-    }
-
-    pub fn push_empty(self: &mut Self) {
-        self.bindings.push(HashMap::new());
-    }
-
-    pub fn pop(self: &mut Self) {
-        self.bindings.pop().expect("environment stack underflow");
+    pub fn new(outer: Option<Handle>) -> Self {
+        Self { bindings: HashMap::new(), outer: outer }
     }
 
     pub fn def(self: &mut Self, sym: Symbol, handle: Handle) {
-        self.bindings
-            .last_mut()
-            .expect("empty environment stack")
-            .insert(sym, handle);
+        self.bindings.insert(sym, handle);
     }
 
-    pub fn lookup(self: &Self, sym: Symbol) -> Option<Handle> {
-        for e in self.bindings.iter().rev() {
-            match e.get(&sym) {
-                Some(handle) => return Some(*handle),
-                None => ()
+    pub fn lookup(self: &Self, sym: Symbol, ctx: &Context) -> Option<Handle> {
+        match self.bindings.get(&sym) {
+            Some(handle) => Some(*handle),
+            None => match self.outer {
+                Some(env_h) => {
+                    if let Sexp::Env(env) = ctx.heap.get_ref(env_h) {
+                        env.lookup(sym, ctx)
+                    } else {
+                        unreachable!()
+                    }
+                },
+                None => None
             }
         }
-        None
     }
 }

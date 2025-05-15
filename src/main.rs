@@ -11,7 +11,6 @@ mod sexp;
 mod evaluator;
 mod context;
 use context::Context;
-use sexp::Sexp;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -32,16 +31,12 @@ fn main() {
     let mut parser = Parser::new(&source);
     let mut evaluator = Evaluator::new(&mut ctx);
 
-    let s_global_env = Sexp::Env(builtins::global_env(&mut ctx));
-    let global_env = ctx.heap.alloc(s_global_env);
-
     loop {
         match parser.next_form(&mut ctx) {
             Ok(o) => match o {
                 Some(s) => {
                     println!("{}", ctx.heap.get_ref(s).to_string(&ctx));
                     evaluator.push_back(EvalItem::Operand(s));
-                    evaluator.push_back(EvalItem::Operand(global_env));
                     evaluator.push_back(EvalItem::Operator(builtins::eval));
                     match evaluator.run(&mut ctx) {
                         Ok(()) => (),

@@ -1,8 +1,9 @@
 pub mod env;
 use std::collections::VecDeque;
 
+use builtins::global_env;
 use env::Env;
-use crate::{context::{gc_heap::Handle, Context}, sexp::{BuiltinFn, Sexp}};
+use crate::{context::{gc_heap::Handle, Context}, sexp::{BuiltinFn, Sexp, Symbol}};
 pub mod builtins;
 
 #[derive(Debug)]
@@ -31,6 +32,7 @@ impl EvalItem {
 pub struct Evaluator{
     stack: Vec<EvalItem>,
     queue: VecDeque<EvalItem>,
+    env: Handle,
 }
 
 impl Evaluator{
@@ -38,6 +40,7 @@ impl Evaluator{
         Self {
             stack: vec![],
             queue: VecDeque::new(),
+            env: global_env(ctx)
         }
     }
 
@@ -45,8 +48,12 @@ impl Evaluator{
         self.stack.push(EvalItem::Operand(handle));
     }
 
-    fn pop(&mut self) -> Result<EvalItem, EvalError> {
-        self.stack.pop().ok_or(EvalError::StackUnderflow)
+    fn pop(&mut self) -> Result<Handle, EvalError> {
+        match self.stack.pop() {
+            Some(EvalItem::Operand(h)) => Ok(h),
+            Some(_) => unreachable!(),
+            None => Err(EvalError::StackUnderflow)
+        }
     }
 
     pub fn push_back(&mut self, item: EvalItem) {
@@ -59,6 +66,14 @@ impl Evaluator{
 
     fn push_front(&mut self, item: EvalItem) {
         self.queue.push_front(item);
+    }
+
+    pub fn lookup(&self, sym: Symbol, ctx: &Context) -> Option<Handle> {
+        let env = ctx.heap.get_ref(self.env);
+        match env {
+            Sexp::Env(env) => env.lookup(sym, ctx),
+            _ => unreachable!()
+        }
     }
 
     pub fn run(&mut self, ctx: &mut Context) -> Result<(), EvalError>{
