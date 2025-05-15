@@ -64,8 +64,9 @@ impl Evaluator{
         self.queue.pop_front().ok_or(EvalError::QueueUnderflow)
     }
 
-    fn push_front(&mut self, item: EvalItem) {
-        self.queue.push_front(item);
+    fn push_front(&mut self, mut q: VecDeque<EvalItem>) {
+        q.append(&mut self.queue);
+        self.queue = q;
     }
 
     pub fn lookup(&self, sym: Symbol, ctx: &Context) -> Option<Handle> {

@@ -41,8 +41,7 @@ pub fn eval(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
             q.push_back(EvalItem::Operator(push));
             q.push_back(EvalItem::Operand(*cdr));
             q.push_back(EvalItem::Operator(apply));
-            q.append(&mut e.queue);
-            e.queue = q;
+            e.push_front(q);
         },
         Sexp::Nil => todo!(),
         Sexp::Builtin(f) => f(e, ctx)?,
