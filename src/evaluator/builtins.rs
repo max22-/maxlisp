@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, env::Args};
+use std::{collections::VecDeque};
 
 use crate::context::{gc_heap::Handle, Context};
 use crate::evaluator::Evaluator;
