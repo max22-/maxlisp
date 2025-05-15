@@ -1,9 +1,11 @@
 use crate::context::gc_heap::Handle;
 use crate::context::Context;
-use crate::evaluator::Evaluator;
+use crate::evaluator::env::Env;
+use crate::evaluator::{EvalError, Evaluator};
 
 
 pub type Symbol = u64;
+pub type BuiltinFn = fn(&mut Evaluator, &mut Context) -> Result<(), EvalError>;
 
 pub enum Sexp {
     Integer(i64),
@@ -11,7 +13,8 @@ pub enum Sexp {
     String(String),
     Pair(Handle, Handle),
     Nil,
-    Builtin(fn(&mut Evaluator)),
+    Builtin(BuiltinFn),
+    Env(Env)
 }
 
 impl Sexp {
@@ -53,7 +56,8 @@ impl Sexp {
                 result
             }
             Sexp::Nil => String::from("()"),
-            Self::Builtin(_) => String::from("<builtin>")
+            Sexp::Builtin(_) => String::from("<builtin>"),
+            Sexp::Env(_) => String::from("<env>")
         }
     }
 }
