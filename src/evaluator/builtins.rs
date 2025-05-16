@@ -94,17 +94,13 @@ pub fn cons(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
     Ok(())
 }
 
-pub fn map_eval(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
-    let l = ctx.heap.get_ref(e.pop()?).into_handle_list(ctx)?;
-    let mut q = VecDeque::new();
-    for i in &l {
-        q.push_back(EvalItem::Operand(*i));
-        q.push_back(EvalItem::Operator(eval, "eval"));
+pub fn wrap_helper(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
+    let args = ctx.heap.get_ref(e.pop()?).into_handle_list(ctx)?;
+    if args.len() != 1 {
+        return Err(EvalError::InvalidNumberOfArguments);
     }
-    q.push_back(EvalItem::Operand(e.get_nil()));
-    for _ in 0..l.len() {
-        q.push_back(EvalItem::Operator(cons, "cons"));
-    }
+    let p = args[0];
+    e.push(ctx.heap.alloc(Sexp::WrappedProc(p)));
     Ok(())
 }
 
@@ -114,18 +110,12 @@ pub fn wrap(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
         return Err(EvalError::InvalidNumberOfArguments);
     }
     let p = args[0];
-    let closure = Closure {
-        env: e.get_env(),
-        vars: vec![ctx.heap.alloc(Sexp::Symbol(ctx.interner.intern("l")))],
-        sym: ctx.heap.alloc(Sexp::Symbol(ctx.interner.intern("%"))),
-        body: Sexp::from_handle_list(vec![ctx.heap.alloc(Sexp::Builtin(map_eval))], ctx),
-    };
     let q = VecDeque::from(vec![
         EvalItem::Operand(p),
         EvalItem::Operator(eval, "eval"),
-        EvalItem::Operand(ctx.heap.alloc(Sexp::Closure(closure))),
-        EvalItem::Operator(apply, "apply"),
-        EvalItem::Operator(apply, "apply"),
+        EvalItem::Operand(e.get_nil()),
+        EvalItem::Operator(cons, "cons"),
+        EvalItem::Operator(wrap_helper, "wrap_helper")
     ]);
     e.push_front(q);
     Ok(())
@@ -158,9 +148,10 @@ pub fn eval(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
             e.push_front(q);
         }
         Sexp::Nil => todo!(),
-        Sexp::Builtin(f) => f(e, ctx)?,
         Sexp::Env(_) => todo!(),
-        Sexp::Closure(_) => todo!(),
+        Sexp::Builtin(_) => e.push(h),
+        Sexp::Closure(_) => e.push(h),
+        Sexp::WrappedProc(_) => e.push(h),
     }
     Ok(())
 }
@@ -226,6 +217,19 @@ pub fn apply(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
             q.push_back(EvalItem::Operand(c.body));
             q.push_back(EvalItem::Operator(eval, "eval"));
             q.push_back(EvalItem::Operator(pop_env, "pop_env"));
+        }
+        Sexp::WrappedProc(p) => {
+            q.push_back(EvalItem::Operand(*p));
+            let args = ctx.heap.get_ref(args_h).into_handle_list(ctx)?;
+            for arg in &args {
+                q.push_back(EvalItem::Operand(*arg));
+                q.push_back(EvalItem::Operator(eval, "eval"));
+            }
+            q.push_back(EvalItem::Operand(e.get_nil()));
+            for _ in 0..args.len() {
+                q.push_back(EvalItem::Operator(cons, "cons"));
+            }
+            q.push_back(EvalItem::Operator(apply, "apply"));
         }
         _ => return Err(EvalError::TypeError(String::from("expected a procedure"))),
     };

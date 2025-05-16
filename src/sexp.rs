@@ -19,9 +19,11 @@ pub enum Sexp {
     String(String),
     Pair(Handle, Handle),
     Nil,
-    Builtin(BuiltinFn),
+
     Env(Env),
+    Builtin(BuiltinFn),
     Closure(Closure),
+    WrappedProc(Handle)
 }
 
 impl Sexp {
@@ -63,9 +65,10 @@ impl Sexp {
                 result
             }
             Sexp::Nil => String::from("()"),
-            Sexp::Builtin(_) => String::from("<builtin>"),
             Sexp::Env(_) => String::from("<env>"),
+            Sexp::Builtin(_) => String::from("<builtin>"),
             Sexp::Closure(_) => String::from("<closure>"),
+            Sexp::WrappedProc(_) => String::from("<wrapped proc>"),
         }
     }
 
