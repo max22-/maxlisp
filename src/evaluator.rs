@@ -38,6 +38,7 @@ pub struct Evaluator {
     stack: Vec<EvalItem>,
     queue: VecDeque<EvalItem>,
     env_stack: Vec<Handle>,
+    nil: Handle,
 }
 
 impl Evaluator {
@@ -46,6 +47,7 @@ impl Evaluator {
             stack: vec![],
             queue: VecDeque::new(),
             env_stack: vec![global_env(ctx)],
+            nil: ctx.heap.alloc(Sexp::Nil),
         }
     }
 
@@ -105,6 +107,10 @@ impl Evaluator {
             Sexp::Env(env) => env.def(sym, val),
             _ => unreachable!(),
         }
+    }
+
+    pub fn get_nil(&self) -> Handle {
+        return self.nil;
     }
 
     pub fn run(&mut self, ctx: &mut Context) -> Result<(), EvalError> {

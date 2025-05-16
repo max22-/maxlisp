@@ -78,7 +78,7 @@ pub fn def(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
         EvalItem::Operand(sym_h),
         EvalItem::Operand(val),
         EvalItem::Operator(eval, "eval"),
-        EvalItem::Operand(ctx.heap.alloc(Sexp::Nil)),
+        EvalItem::Operand(e.get_nil()),
         EvalItem::Operator(cons, "cons"),
         EvalItem::Operator(cons, "cons"),
         EvalItem::Operator(def_raw, "def_raw"),
@@ -101,12 +101,14 @@ pub fn map_eval(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
         q.push_back(EvalItem::Operand(*i));
         q.push_back(EvalItem::Operator(eval, "eval"));
     }
-    q.push_back(EvalItem::Operand(ctx.heap.alloc(Sexp::Nil)));
+    q.push_back(EvalItem::Operand(e.get_nil()));
     for _ in 0..l.len() {
         q.push_back(EvalItem::Operator(cons, "cons"));
     }
     Ok(())
 }
+
+// TODO: add a nil instance in the evaluator
 
 pub fn wrap(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
     let args = ctx.heap.get_ref(e.pop()?).into_handle_list(ctx)?;
@@ -124,6 +126,8 @@ pub fn wrap(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
         EvalItem::Operand(p),
         EvalItem::Operator(eval, "eval"),
         EvalItem::Operand(ctx.heap.alloc(Sexp::Closure(closure))),
+        EvalItem::Operator(apply, "apply"),
+        EvalItem::Operator(apply, "apply"),
     ]);
     e.push_front(q);
     Ok(())
@@ -191,7 +195,6 @@ pub fn pop_env(e: &mut Evaluator, _: &mut Context) -> Result<(), EvalError> {
 pub fn apply(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
     let args_h = e.pop()?;
     let proc_h = e.pop()?;
-    let nil = ctx.heap.alloc(Sexp::Nil);
     let proc = ctx.heap.get_ref(proc_h);
     let mut q = VecDeque::new();
     match proc {
@@ -205,20 +208,20 @@ pub fn apply(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
                 return Err(EvalError::InvalidNumberOfArguments);
             }
             q.push_back(EvalItem::Operand(c.env));
-            q.push_back(EvalItem::Operand(nil));
+            q.push_back(EvalItem::Operand(e.get_nil()));
             q.push_back(EvalItem::Operator(cons, "cons"));
             q.push_back(EvalItem::Operator(push_env, "push_env"));
             for (var, val) in c.vars.iter().zip(args) {
                 q.push_back(EvalItem::Operand(*var));
                 q.push_back(EvalItem::Operand(val));
-                q.push_back(EvalItem::Operand(nil));
+                q.push_back(EvalItem::Operand(e.get_nil()));
                 q.push_back(EvalItem::Operator(cons, "cons"));
                 q.push_back(EvalItem::Operator(cons, "cons"));
                 q.push_back(EvalItem::Operator(def_raw, "def_raw"));
             }
             q.push_back(EvalItem::Operand(c.sym));
             q.push_back(EvalItem::Operand(e.get_env()));
-            q.push_back(EvalItem::Operand(nil));
+            q.push_back(EvalItem::Operand(e.get_nil()));
             q.push_back(EvalItem::Operator(cons, "cons"));
             q.push_back(EvalItem::Operator(cons, "cons"));
             q.push_back(EvalItem::Operator(def_raw, "def_raw"));
