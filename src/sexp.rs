@@ -7,10 +7,10 @@ pub type Symbol = u64;
 pub type BuiltinFn = fn(&mut Evaluator, &mut Context) -> Result<(), EvalError>;
 
 pub struct Closure {
-    env: Handle,
-    vars: Vec<Symbol>,
-    sym: Symbol,
-    body: Handle,
+    pub env: Handle,
+    pub vars: Vec<Handle>,
+    pub sym: Handle,
+    pub body: Handle,
 }
 
 pub enum Sexp {
@@ -105,4 +105,13 @@ impl Sexp {
             _ => Err(EvalError::TypeError(String::from("expected an integer"))),
         }
     }
+
+    pub fn from_handle_list(l: Vec<Handle>, ctx: &mut Context) -> Handle {
+        let mut result = ctx.heap.alloc(Sexp::Nil);
+        for i in l.iter().rev() {
+            result = ctx.heap.alloc(Sexp::Pair(*i, result));
+        }
+        result
+    }
 }
+

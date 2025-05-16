@@ -1,0 +1,5 @@
+(def q (vau (x) % x))
+(q 1)
+(cdr (1 2 3))
+(def + (wrap add))
+(+ 1 2 3)

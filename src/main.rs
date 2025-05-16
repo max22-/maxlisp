@@ -37,7 +37,7 @@ fn main() {
                 Some(s) => {
                     println!("{}", ctx.heap.get_ref(s).to_string(&ctx));
                     evaluator.push_back(EvalItem::Operand(s));
-                    evaluator.push_back(EvalItem::Operator(builtins::eval));
+                    evaluator.push_back(EvalItem::Operator(builtins::eval, "eval"));
                     match evaluator.run(&mut ctx) {
                         Ok(()) => (),
                         Err(e) => println!("{:?}", e),

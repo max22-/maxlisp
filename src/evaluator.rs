@@ -21,14 +21,14 @@ pub enum EvalError {
 }
 
 pub enum EvalItem {
-    Operator(BuiltinFn),
+    Operator(BuiltinFn, &'static str),
     Operand(Handle),
 }
 
 impl EvalItem {
     pub fn to_string(&self, ctx: &Context) -> String {
         match self {
-            Self::Operator(_) => String::from("<op>"),
+            Self::Operator(_, name) => format!("<op {}>", name),
             Self::Operand(h) => ctx.heap.get_ref(*h).to_string(ctx),
         }
     }
@@ -37,7 +37,7 @@ impl EvalItem {
 pub struct Evaluator {
     stack: Vec<EvalItem>,
     queue: VecDeque<EvalItem>,
-    env: Handle,
+    env_stack: Vec<Handle>,
 }
 
 impl Evaluator {
@@ -45,7 +45,7 @@ impl Evaluator {
         Self {
             stack: vec![],
             queue: VecDeque::new(),
-            env: global_env(ctx),
+            env_stack: vec![global_env(ctx)],
         }
     }
 
@@ -75,34 +75,32 @@ impl Evaluator {
     }
 
     pub fn lookup(&self, sym: Symbol, ctx: &Context) -> Option<Handle> {
-        let env = ctx.heap.get_ref(self.env);
+        let env = ctx.heap.get_ref(self.get_env());
         match env {
             Sexp::Env(env) => env.lookup(sym, ctx),
             _ => unreachable!(),
         }
     }
 
-    pub fn push_env(&mut self, mut env: Env, ctx: &mut Context) {
-        env.outer = Some(self.env);
-        self.env = ctx.heap.alloc(Sexp::Env(env));
+    pub fn push_env(&mut self, env: Handle) {
+        self.env_stack.push(env);
     }
 
-    pub fn pop_env(&mut self, ctx: &Context) -> Result<(), EvalError> {
-        let env = ctx.heap.get_ref(self.env);
-        match env {
-            Sexp::Env(env) => match env.outer {
-                Some(env_h) => {
-                    self.env = env_h;
-                    Ok(())
-                }
-                None => Err(EvalError::CannotPopGlobalEnv),
-            },
-            _ => unreachable!(),
+    pub fn pop_env(&mut self) -> Result<(), EvalError> {
+        if self.env_stack.len() >= 2 {
+            self.env_stack.pop();
+            Ok(())
+        } else {
+            Err(EvalError::CannotPopGlobalEnv)
         }
     }
 
+    pub fn get_env(self: &Self) -> Handle {
+        return *self.env_stack.last().unwrap();
+    }
+
     pub fn define(&self, sym: Symbol, val: Handle, ctx: &mut Context) {
-        let env = ctx.heap.get_mut_ref(self.env);
+        let env = ctx.heap.get_mut_ref(self.get_env());
         match env {
             Sexp::Env(env) => env.def(sym, val),
             _ => unreachable!(),
@@ -114,7 +112,7 @@ impl Evaluator {
             let item = self.queue.pop_front();
             match item {
                 Some(item) => match item {
-                    EvalItem::Operator(op) => op(self, ctx)?,
+                    EvalItem::Operator(op, _) => op(self, ctx)?,
                     EvalItem::Operand(h) => self.push(h),
                 },
                 None => break,
