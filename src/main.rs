@@ -3,13 +3,13 @@ use std::fs;
 
 mod lexer;
 mod parser;
-use evaluator::builtins;
 use evaluator::EvalItem;
 use evaluator::Evaluator;
+use evaluator::builtins;
 use parser::Parser;
-mod sexp;
-mod evaluator;
 mod context;
+mod evaluator;
+mod sexp;
 use context::Context;
 
 fn main() {
@@ -40,7 +40,7 @@ fn main() {
                     evaluator.push_back(EvalItem::Operator(builtins::eval));
                     match evaluator.run(&mut ctx) {
                         Ok(()) => (),
-                        Err(e) => println!("{:?}", e)
+                        Err(e) => println!("{:?}", e),
                     };
                 }
                 None => break,

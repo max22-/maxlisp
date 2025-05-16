@@ -1,6 +1,6 @@
-use std::{collections::VecDeque};
+use std::collections::VecDeque;
 
-use crate::context::{gc_heap::Handle, Context};
+use crate::context::{Context, gc_heap::Handle};
 use crate::evaluator::Evaluator;
 use crate::evaluator::env::Env;
 use crate::sexp::Sexp;
@@ -12,14 +12,15 @@ pub fn add(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
     let args = ctx.heap.get_ref(args_h).into_list(ctx)?;
     let mut result: i64 = 0;
     for a in args {
-        result += a.into_integer(ctx).map_err(|_| EvalError::TypeError(String::from("expected a list of integers")))?;
+        result += a
+            .into_integer(ctx)
+            .map_err(|_| EvalError::TypeError(String::from("expected a list of integers")))?;
     }
     e.push(ctx.heap.alloc(Sexp::Integer(result)));
     Ok(())
 }
 
 pub fn vau(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
-    
     Ok(())
 }
 
@@ -31,7 +32,7 @@ pub fn def(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
     }
     let sym = match ctx.heap.get_ref(args[0]) {
         Sexp::Symbol(sym) => *sym,
-        _ => return Err(EvalError::TypeError(String::from("expected symbol")))
+        _ => return Err(EvalError::TypeError(String::from("expected symbol"))),
     };
     let val = args[1];
     e.define(sym, val, ctx);
@@ -45,11 +46,9 @@ pub fn eval(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
     let sexp = ctx.heap.get_ref(h);
     match sexp {
         Sexp::Integer(_) => e.push(h),
-        Sexp::Symbol(sym) => {
-            match e.lookup(*sym, ctx) {
-                Some(h) => e.push(h),
-                None => return Err(EvalError::SymbolNotBound(String::from("todo!")))
-            }
+        Sexp::Symbol(sym) => match e.lookup(*sym, ctx) {
+            Some(h) => e.push(h),
+            None => return Err(EvalError::SymbolNotBound(String::from("todo!"))),
         },
         Sexp::String(_) => e.push(h),
         Sexp::Pair(car, cdr) => {
@@ -60,11 +59,11 @@ pub fn eval(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
             q.push_back(EvalItem::Operand(*cdr));
             q.push_back(EvalItem::Operator(apply));
             e.push_front(q);
-        },
+        }
         Sexp::Nil => todo!(),
         Sexp::Builtin(f) => f(e, ctx)?,
         Sexp::Env(_) => todo!(),
-        Sexp::Closure(_) => todo!()
+        Sexp::Closure(_) => todo!(),
     }
     Ok(())
 }
@@ -74,8 +73,8 @@ pub fn push(e: &mut Evaluator, _: &mut Context) -> Result<(), EvalError> {
         EvalItem::Operand(h) => {
             e.push(h);
             Ok(())
-        },
-        EvalItem::Operator(_) => Err(EvalError::CantPushOperator)
+        }
+        EvalItem::Operator(_) => Err(EvalError::CantPushOperator),
     }
 }
 
@@ -84,7 +83,7 @@ pub fn apply(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
     let func_h = e.pop()?;
     let func = match ctx.heap.get_ref(func_h) {
         Sexp::Builtin(func) => func,
-        _ => return Err(EvalError::TypeError(String::from("expected a procedure")))
+        _ => return Err(EvalError::TypeError(String::from("expected a procedure"))),
     };
     e.push(args);
     func(e, ctx)?;
@@ -94,8 +93,17 @@ pub fn apply(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
 pub fn global_env(ctx: &mut Context) -> Handle {
     let mut env = Env::new(None);
     env.def(ctx.interner.intern("+"), ctx.heap.alloc(Sexp::Builtin(add)));
-    env.def(ctx.interner.intern("eval"), ctx.heap.alloc(Sexp::Builtin(eval)));
-    env.def(ctx.interner.intern("vau"), ctx.heap.alloc(Sexp::Builtin(vau)));
-    env.def(ctx.interner.intern("def"), ctx.heap.alloc(Sexp::Builtin(def)));
+    env.def(
+        ctx.interner.intern("eval"),
+        ctx.heap.alloc(Sexp::Builtin(eval)),
+    );
+    env.def(
+        ctx.interner.intern("vau"),
+        ctx.heap.alloc(Sexp::Builtin(vau)),
+    );
+    env.def(
+        ctx.interner.intern("def"),
+        ctx.heap.alloc(Sexp::Builtin(def)),
+    );
     ctx.heap.alloc(Sexp::Env(env))
 }

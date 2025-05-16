@@ -1,16 +1,19 @@
-use crate::context::gc_heap::Handle;
 use crate::context::Context;
+use crate::context::gc_heap::Handle;
 use crate::sexp::{Sexp, Symbol};
 use std::collections::HashMap;
 
 pub struct Env {
     bindings: HashMap<Symbol, Handle>,
-    pub outer: Option<Handle>
+    pub outer: Option<Handle>,
 }
 
 impl Env {
     pub fn new(outer: Option<Handle>) -> Self {
-        Self { bindings: HashMap::new(), outer: outer }
+        Self {
+            bindings: HashMap::new(),
+            outer: outer,
+        }
     }
 
     pub fn def(self: &mut Self, sym: Symbol, handle: Handle) {
@@ -27,9 +30,9 @@ impl Env {
                     } else {
                         unreachable!()
                     }
-                },
-                None => None
-            }
+                }
+                None => None,
+            },
         }
     }
 }

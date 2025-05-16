@@ -1,8 +1,7 @@
-use crate::context::gc_heap::Handle;
 use crate::context::Context;
+use crate::context::gc_heap::Handle;
 use crate::evaluator::env::Env;
 use crate::evaluator::{EvalError, Evaluator};
-
 
 pub type Symbol = u64;
 pub type BuiltinFn = fn(&mut Evaluator, &mut Context) -> Result<(), EvalError>;
@@ -22,7 +21,7 @@ pub enum Sexp {
     Nil,
     Builtin(BuiltinFn),
     Env(Env),
-    Closure(Closure)
+    Closure(Closure),
 }
 
 impl Sexp {
@@ -66,7 +65,7 @@ impl Sexp {
             Sexp::Nil => String::from("()"),
             Sexp::Builtin(_) => String::from("<builtin>"),
             Sexp::Env(_) => String::from("<env>"),
-            Sexp::Closure(_) => String::from("<closure>")
+            Sexp::Closure(_) => String::from("<closure>"),
         }
     }
 
@@ -79,13 +78,13 @@ impl Sexp {
                 let mut rest = cdr.into_list(ctx)?;
                 list.append(&mut rest);
                 Ok(list)
-            },
+            }
             Sexp::Nil => Ok(list),
-            _ => Err(EvalError::TypeError(String::from("expected a list")))
+            _ => Err(EvalError::TypeError(String::from("expected a list"))),
         }
     }
 
-    pub fn into_handle_list(self: &Self, ctx: & Context) -> Result<Vec<Handle>, EvalError> {
+    pub fn into_handle_list(self: &Self, ctx: &Context) -> Result<Vec<Handle>, EvalError> {
         let mut list: Vec<Handle> = vec![];
         match self {
             Sexp::Pair(car_h, cdr_h) => {
@@ -94,16 +93,16 @@ impl Sexp {
                 let mut rest = cdr.into_handle_list(ctx)?;
                 list.append(&mut rest);
                 Ok(list)
-            },
+            }
             Sexp::Nil => Ok(list),
-            _ => Err(EvalError::TypeError(String::from("expected a list")))
+            _ => Err(EvalError::TypeError(String::from("expected a list"))),
         }
     }
 
     pub fn into_integer(self: &Self, ctx: &Context) -> Result<i64, EvalError> {
         match self {
             Sexp::Integer(i) => Ok(*i),
-            _ => Err(EvalError::TypeError(String::from("expected an integer")))
+            _ => Err(EvalError::TypeError(String::from("expected an integer"))),
         }
     }
 }

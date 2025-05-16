@@ -1,9 +1,12 @@
 pub mod env;
 use std::collections::VecDeque;
 
+use crate::{
+    context::{Context, gc_heap::Handle},
+    sexp::{BuiltinFn, Sexp, Symbol},
+};
 use builtins::global_env;
 use env::Env;
-use crate::{context::{gc_heap::Handle, Context}, sexp::{BuiltinFn, Sexp, Symbol}};
 pub mod builtins;
 
 #[derive(Debug)]
@@ -26,23 +29,23 @@ impl EvalItem {
     pub fn to_string(&self, ctx: &Context) -> String {
         match self {
             Self::Operator(_) => String::from("<op>"),
-            Self::Operand(h) => ctx.heap.get_ref(*h).to_string(ctx)
+            Self::Operand(h) => ctx.heap.get_ref(*h).to_string(ctx),
         }
     }
 }
 
-pub struct Evaluator{
+pub struct Evaluator {
     stack: Vec<EvalItem>,
     queue: VecDeque<EvalItem>,
     env: Handle,
 }
 
-impl Evaluator{
+impl Evaluator {
     pub fn new(ctx: &mut Context) -> Self {
         Self {
             stack: vec![],
             queue: VecDeque::new(),
-            env: global_env(ctx)
+            env: global_env(ctx),
         }
     }
 
@@ -54,7 +57,7 @@ impl Evaluator{
         match self.stack.pop() {
             Some(EvalItem::Operand(h)) => Ok(h),
             Some(_) => unreachable!(),
-            None => Err(EvalError::StackUnderflow)
+            None => Err(EvalError::StackUnderflow),
         }
     }
 
@@ -75,7 +78,7 @@ impl Evaluator{
         let env = ctx.heap.get_ref(self.env);
         match env {
             Sexp::Env(env) => env.lookup(sym, ctx),
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
@@ -91,10 +94,10 @@ impl Evaluator{
                 Some(env_h) => {
                     self.env = env_h;
                     Ok(())
-                },
-                None => Err(EvalError::CannotPopGlobalEnv)
+                }
+                None => Err(EvalError::CannotPopGlobalEnv),
             },
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
@@ -102,21 +105,19 @@ impl Evaluator{
         let env = ctx.heap.get_mut_ref(self.env);
         match env {
             Sexp::Env(env) => env.def(sym, val),
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
-    pub fn run(&mut self, ctx: &mut Context) -> Result<(), EvalError>{
+    pub fn run(&mut self, ctx: &mut Context) -> Result<(), EvalError> {
         loop {
             let item = self.queue.pop_front();
             match item {
-                Some(item) => {
-                    match item {
-                        EvalItem::Operator(op) => op(self, ctx)?,
-                        EvalItem::Operand(h) => self.push(h)
-                    }
+                Some(item) => match item {
+                    EvalItem::Operator(op) => op(self, ctx)?,
+                    EvalItem::Operand(h) => self.push(h),
                 },
-                None => break
+                None => break,
             }
             println!("{}", self.to_string(ctx));
         }
@@ -143,4 +144,3 @@ impl Evaluator{
         result
     }
 }
-

@@ -1,5 +1,5 @@
-use crate::context::gc_heap::Handle;
 use crate::context::Context;
+use crate::context::gc_heap::Handle;
 use crate::lexer::{Lexer, Token, TokenType};
 use crate::sexp::Sexp;
 
@@ -75,10 +75,7 @@ impl<'a> Parser<'a> {
         });
     }
 
-    fn parse_cdr(
-        self: &mut Self,
-        ctx: &mut Context
-    ) -> Result<Handle, ParseError> {
+    fn parse_cdr(self: &mut Self, ctx: &mut Context) -> Result<Handle, ParseError> {
         match &self.look {
             None => self.make_error(ParseErrorType::UnexpectedEOF),
             Some(t) => match t.r#type {
@@ -113,10 +110,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_list(
-        self: &mut Self,
-        ctx: &mut Context
-    ) -> Result<Handle, ParseError> {
+    fn parse_list(self: &mut Self, ctx: &mut Context) -> Result<Handle, ParseError> {
         self.advance()?; // skip the '('
         let first = if let Some(s) = self.next_form(ctx)? {
             s
@@ -129,10 +123,7 @@ impl<'a> Parser<'a> {
         Ok(result)
     }
 
-    pub fn next_form(
-        self: &mut Self,
-        ctx: &mut Context
-    ) -> Result<Option<Handle>, ParseError> {
+    pub fn next_form(self: &mut Self, ctx: &mut Context) -> Result<Option<Handle>, ParseError> {
         if self.look == None {
             self.advance()?;
         }
