@@ -108,8 +108,6 @@ pub fn map_eval(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
     Ok(())
 }
 
-// TODO: add a nil instance in the evaluator
-
 pub fn wrap(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
     let args = ctx.heap.get_ref(e.pop()?).into_handle_list(ctx)?;
     if args.len() != 1 {
