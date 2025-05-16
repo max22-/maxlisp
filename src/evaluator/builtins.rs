@@ -32,16 +32,20 @@ pub fn vau(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
     let sym = args[1];
     match ctx.heap.get_ref(sym) {
         Sexp::Symbol(_) => (),
-        _ => return Err(EvalError::TypeError(String::from("expected a symbol for the environment"))),
+        _ => {
+            return Err(EvalError::TypeError(String::from(
+                "expected a symbol for the environment",
+            )));
+        }
     };
 
     let body = args[2];
-    
+
     let closure = Closure {
         env: e.get_env(),
         vars: vars,
         sym: sym,
-        body: body
+        body: body,
     };
     e.push(ctx.heap.alloc(Sexp::Closure(closure)));
     Ok(())
@@ -110,13 +114,11 @@ pub fn wrap(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
         return Err(EvalError::InvalidNumberOfArguments);
     }
     let p = args[0];
-    let closure = Closure{
+    let closure = Closure {
         env: e.get_env(),
         vars: vec![ctx.heap.alloc(Sexp::Symbol(ctx.interner.intern("l")))],
         sym: ctx.heap.alloc(Sexp::Symbol(ctx.interner.intern("%"))),
-        body: Sexp::from_handle_list(vec![
-            ctx.heap.alloc(Sexp::Builtin(map_eval)),
-        ], ctx),
+        body: Sexp::from_handle_list(vec![ctx.heap.alloc(Sexp::Builtin(map_eval))], ctx),
     };
     let q = VecDeque::from(vec![
         EvalItem::Operand(p),
@@ -134,7 +136,14 @@ pub fn eval(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
         Sexp::Integer(_) => e.push(h),
         Sexp::Symbol(sym) => match e.lookup(*sym, ctx) {
             Some(h) => e.push(h),
-            None => return Err(EvalError::SymbolNotBound(ctx.interner.string_from_symbol(*sym).unwrap_or(&String::from("??")).clone())),
+            None => {
+                return Err(EvalError::SymbolNotBound(
+                    ctx.interner
+                        .string_from_symbol(*sym)
+                        .unwrap_or(&String::from("??"))
+                        .clone(),
+                ));
+            }
         },
         Sexp::String(_) => e.push(h),
         Sexp::Pair(car, cdr) => {
@@ -184,7 +193,7 @@ pub fn apply(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
     let proc_h = e.pop()?;
     let nil = ctx.heap.alloc(Sexp::Nil);
     let proc = ctx.heap.get_ref(proc_h);
-    let mut q= VecDeque::new();
+    let mut q = VecDeque::new();
     match proc {
         Sexp::Builtin(func) => {
             q.push_back(EvalItem::Operand(args_h));
@@ -230,7 +239,9 @@ pub fn car(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
             e.push(*car);
             Ok(())
         }
-        Sexp::Nil => Err(EvalError::TypeError(String::from("Can't apply car to the empty list"))),
+        Sexp::Nil => Err(EvalError::TypeError(String::from(
+            "Can't apply car to the empty list",
+        ))),
         _ => Err(EvalError::TypeError(String::from("expected a list"))),
     }
 }
@@ -242,14 +253,19 @@ pub fn cdr(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
             e.push(*cdr);
             Ok(())
         }
-        Sexp::Nil => Err(EvalError::TypeError(String::from("Can't apply cdr to the empty list"))),
+        Sexp::Nil => Err(EvalError::TypeError(String::from(
+            "Can't apply cdr to the empty list",
+        ))),
         _ => Err(EvalError::TypeError(String::from("expected a list"))),
     }
 }
 
 pub fn global_env(ctx: &mut Context) -> Handle {
     let mut env = Env::new(None);
-    env.def(ctx.interner.intern("add"), ctx.heap.alloc(Sexp::Builtin(add)));
+    env.def(
+        ctx.interner.intern("add"),
+        ctx.heap.alloc(Sexp::Builtin(add)),
+    );
     env.def(
         ctx.interner.intern("eval"),
         ctx.heap.alloc(Sexp::Builtin(eval)),
