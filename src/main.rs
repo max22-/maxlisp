@@ -50,5 +50,6 @@ fn main() {
                 break;
             }
         }
+        println!("");
     }
 }
