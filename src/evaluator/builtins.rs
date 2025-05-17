@@ -196,25 +196,30 @@ pub fn apply(e: &mut Evaluator, ctx: &mut Context) -> Result<(), EvalError> {
             if c.vars.len() != args.len() {
                 return Err(EvalError::InvalidNumberOfArguments);
             }
-            q.push_back(EvalItem::Operand(c.env));
+            // TODO: the bug is probably here : create a new environment and set the outer to be c.env
+            let new_bindings: Vec<(usize, usize)> = c.vars.iter().map(|v| *v).zip(args).collect();
+            let sym = c.sym;
+            let body = c.body;
+            let new_env = ctx.heap.alloc(Sexp::Env(Env::new(Some(c.env))));
+            q.push_back(EvalItem::Operand(new_env));
             q.push_back(EvalItem::Operand(e.get_nil()));
             q.push_back(EvalItem::Operator(cons, "cons"));
             q.push_back(EvalItem::Operator(push_env, "push_env"));
-            for (var, val) in c.vars.iter().zip(args) {
-                q.push_back(EvalItem::Operand(*var));
+            for (var, val) in new_bindings {
+                q.push_back(EvalItem::Operand(var));
                 q.push_back(EvalItem::Operand(val));
                 q.push_back(EvalItem::Operand(e.get_nil()));
                 q.push_back(EvalItem::Operator(cons, "cons"));
                 q.push_back(EvalItem::Operator(cons, "cons"));
                 q.push_back(EvalItem::Operator(def_raw, "def_raw"));
             }
-            q.push_back(EvalItem::Operand(c.sym));
+            q.push_back(EvalItem::Operand(sym));
             q.push_back(EvalItem::Operand(e.get_env()));
             q.push_back(EvalItem::Operand(e.get_nil()));
             q.push_back(EvalItem::Operator(cons, "cons"));
             q.push_back(EvalItem::Operator(cons, "cons"));
             q.push_back(EvalItem::Operator(def_raw, "def_raw"));
-            q.push_back(EvalItem::Operand(c.body));
+            q.push_back(EvalItem::Operand(body));
             q.push_back(EvalItem::Operator(eval, "eval"));
             q.push_back(EvalItem::Operator(pop_env, "pop_env"));
         }
